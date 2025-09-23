@@ -115,10 +115,11 @@ input_check <- function(n) {
       n <- input_check(n)
       if (!is.null(seed)) set.seed(seed)
       
-      steps <- sapply(seq_len(n), function(x) sample(c(-3, -1, 1, 10), 
-                                                     size = 1, 
-                                                     prob = c(0.1, 0.4, 0.475, 0.025)
-                                                     )
+      steps <- sapply(seq_len(n), 
+                      function(x) sample(c(-3, -1, 1, 10), 
+                                         size = 1, 
+                                         prob = c(0.1, 0.4, 0.475, 0.025)
+                                         )
                       )
       position <- sum(steps)
       
@@ -188,7 +189,7 @@ Answer:
 
 I ran 10,000 independent simulations for each case. For each n, I estimated the probability of ending exactly at 0 as the proportion of simulations with final position = 0. The probabilities that the random walk ends at 0 I got are around 0.13 at n = 10, about 0.02 at n = 100, and about 0.005 at n = 1000.
 
-As the number of steps increases, the variance of the walk increases, making the distribution of the final position spreads out. This makes it increasingly unlikely that the walk ends exactly at 0, which explains why the probability decreases sharply from about 13% at 10 steps to only about 0.5% by 1000 steps.
+As the number of steps increases, the variance of the walk increases, making the distribution of the final position spreads out. This makes it increasingly unlikely that the walk ends exactly at 0, which explains why the probability decreases sharply from about 13% at 10 steps to only about very small probability by 1000 steps.
 
 ```{r}
 #' monte_carlo_simulator: Estimate probability of ending at 0
@@ -220,3 +221,75 @@ monte_carlo_simulator(10)
 monte_carlo_simulator(100)
 monte_carlo_simulator(1000)
 ```
+
+## **Problem 2 - Mean of Mixture of Distributions**
+
+The number of cars passing an intersection is a classic example of a **Poisson distribution**. At a particular intersection, Poisson is an appropriate distribution **most of the time**, but during **rush hours** (hours of 8am and 5pm) the distribution is really **normally distributed with a much higher mean**.
+
+Using a Monte Carlo simulation, estimate the average number of cars that pass an intersection per day under the following assumptions:
+
+-   From midnight until 7 AM, the distribution of cars per hour is Poisson with mean 1.
+
+-   From 9am to 4pm, the distribution of cars per hour is Poisson with mean 8.
+
+-   From 6pm to 11pm, the distribution of cars per hour is Poisson with mean 12.
+
+-   During rush hours (8am and 5pm), the distribution of cars per hour is Normal with mean 60 and variance 12
+
+Accomplish this **without using any loops**.
+
+(Hint: This can be done with extremely minimal code.)
+
+Answer:
+
+Based on a Monte Carlo simulation of 100,000 independent days, the estimated average number of cars that pass the intersection per day is about 264.
+
+This aligns with the theoretical expected value: $\mathbb{E}[\text{total}] = 8 \cdot 1 + 1 \cdot 60 + 8 \cdot 8 + 1 \cdot 60 + 6 \cdot 12 = 264$ cars.
+
+```{r}
+cars_per_day <- function(seed = NULL) {
+  if (!is.null(seed)) set.seed(seed)
+  
+  midnight_to_7am    <- rpois(8, lambda = 1)                # 7 hours
+  rush_hour_morning  <- rnorm(1, mean = 60, sd = sqrt(12))  # 1 hour (8am)
+  nine_to_four       <- rpois(8, lambda = 8)                # 8 hours
+  rush_hour_evening  <- rnorm(1, mean = 60, sd = sqrt(12))  # 1 hour (5pm)
+  six_to_eleven      <- rpois(6, lambda = 12)               # 6 hours
+  
+  total_cars <- sum(midnight_to_7am,
+                    rush_hour_morning,
+                    nine_to_four,
+                    rush_hour_evening,
+                    six_to_eleven)
+  return(total_cars)
+}
+
+totals <- replicate(100000, cars_per_day())
+mean(totals)
+```
+
+```{r}
+cars_per_day_vec <- function(days = 100000, seed = NULL) {
+  if (!is.null(seed)) set.seed(seed)
+
+  # Simulate all hours at once for all days
+  midnight_to_7am   <- matrix(rpois(8 * days,  lambda = 1),  nrow = 8)
+  rush_hour_morning <- rnorm(days,  mean = 60, sd = sqrt(12))
+  nine_to_four      <- matrix(rpois(8 * days,  lambda = 8),  nrow = 8)
+  rush_hour_evening <- rnorm(days,  mean = 60, sd = sqrt(12))
+  six_to_eleven     <- matrix(rpois(6 * days,  lambda = 12), nrow = 6)
+
+  # Totals for each day = column sums across all blocks
+  totals <- colSums(midnight_to_7am) +
+            rush_hour_morning +
+            colSums(nine_to_four) +
+            rush_hour_evening +
+            colSums(six_to_eleven)
+  
+  # Monte Carlo estimate of expected daily cars
+  return (mean(totals))  
+}
+cars_per_day_vec(days = 100000)
+```
+
+## **Problem 3 - Linear Regression**
