@@ -47,9 +47,10 @@ input_check <- function(n) {
     ```{r for_loop}
     #' random_walk_1: Loop-based modified random walk
     #' 
-    #' Simulates the final position of a one-dimensional modified random walk
+    #' Simulates the final position of a one-dimensional modified random walk.
     #' @param n Positive integer, number of steps in the walk.
-    #' @param seed Optional integer. If provided, fixes the random number generator seed.
+    #' @param seed Optional integer. If provided, fixes the random 
+    #'        number generator seed.
     #' @return An integer giving the final position after \code{n} steps.
 
     random_walk_1 <- function(n, seed = NULL) {
@@ -58,7 +59,10 @@ input_check <- function(n) {
       
       position <- 0
       for (i in seq_len(n)) {
-        step <- sample(c(-3, -1, 1, 10), size = 1, prob = c(0.10, 0.40, 0.475, 0.025))
+        step <- sample(c(-3, -1, 1, 10), 
+                       size = 1, 
+                       prob = c(0.10, 0.40, 0.475, 0.025)
+                       )
         position <- position + step
       }
       
@@ -72,16 +76,22 @@ input_check <- function(n) {
     ```{r built_in_vectorized_functions}
     #' random_walk_2: Vectorized modified random walk
     #'
-    #' Simulates the final position of a one-dimensional modified random walk using a fully vectorized approach (no loops).
+    #' Simulates the final position of a one-dimensional modified 
+    #' random walk using a fully vectorized approach.
     #' @param n Positive integer, number of steps in the walk.
-    #' @param seed Optional integer. If provided, fixes the random number generator seed.
+    #' @param seed Optional integer. If provided, fixes the random 
+    #'        number generator seed.
     #' @return An integer giving the final position after \code{n} steps.
 
     random_walk_2 <- function(n, seed = NULL) {
       n <- input_check(n)
       if (!is.null(seed)) set.seed(seed)
       
-      steps <- sample(c(-3, -1, 1, 10), size = n, replace = TRUE, prob = c(0.1, 0.4, 0.475, 0.025))
+      steps <- sample(c(-3, -1, 1, 10), 
+                      size = n, 
+                      replace = TRUE, 
+                      prob = c(0.1, 0.4, 0.475, 0.025)
+                      )
       position <- sum(steps)
       
       return (position)
@@ -94,16 +104,22 @@ input_check <- function(n) {
     ```{r apply_based}
     #' random_walk_3: Apply-based modified random walk
     #'
-    #' Simulates the final position of a one-dimensional modified random walk using the \code{sapply()} function to generate each step.
+    #' Simulates the final position of a one-dimensional modified 
+    #' random walk using the \code{sapply()} function to generate each step.
     #' @param n Positive integer, number of steps in the walk.
-    #' @param seed Optional integer. If provided, fixes the random number generator seed.
+    #' @param seed Optional integer. If provided, fixes the random 
+    #'        number generator seed.
     #' @return An integer giving the final position after \code{n} steps.
 
     random_walk_3 <- function(n, seed = NULL) {
       n <- input_check(n)
       if (!is.null(seed)) set.seed(seed)
       
-      steps <- sapply(seq_len(n), function(x) sample(c(-3, -1, 1, 10), size = 1, prob = c(0.1, 0.4, 0.475, 0.025)))
+      steps <- sapply(seq_len(n), function(x) sample(c(-3, -1, 1, 10), 
+                                                     size = 1, 
+                                                     prob = c(0.1, 0.4, 0.475, 0.025)
+                                                     )
+                      )
       position <- sum(steps)
       
       return (position)
@@ -126,10 +142,14 @@ b\. Demonstrate that the three versions **can give the same result**. Show this 
 
 ```{r}
 # n = 10 
-c(random_walk_1(10, seed = 506), random_walk_2(10, seed = 506), random_walk_3(10, seed = 506))
+c(random_walk_1(10, seed = 506), 
+  random_walk_2(10, seed = 506), 
+  random_walk_3(10, seed = 506))
 
 # n = 1000
-c(random_walk_1(1000, seed = 123), random_walk_2(1000, seed = 123), random_walk_3(1000, seed = 123))
+c(random_walk_1(1000, seed = 123), 
+  random_walk_2(1000, seed = 123), 
+  random_walk_3(1000, seed = 123))
 ```
 
 c\. Use the **`microbenchmark`** package to clearly demonstrate the speed of the implementations. Compare performance with a low input (1,000) and a large input (100,000). Discuss the results.
@@ -173,14 +193,17 @@ As the number of steps increases, the variance of the walk increases, making the
 ```{r}
 #' monte_carlo_simulator: Estimate probability of ending at 0
 #'
-#' Uses Monte Carlo simulation to estimate the probability that a modified random walk ends at position 0 after \code{n} steps.
+#' Uses Monte Carlo simulation to estimate the probability that 
+#' a modified random walk ends at position 0 after \code{n} steps.
 #'
 #' The function repeatedly calls \code{\link{random_walk_2}} to generate
 #' independent random walks and calculates the proportion that end at 0.
 #'
 #' @param n Positive integer, number of steps in each random walk.
-#' @param n_simulations Positive integer, number of independent simulations to run. Defaults to 10,000.
-#' @return A numeric value between 0 and 1 giving the estimated probability that the walk ends at 0.
+#' @param n_simulations Positive integer, number of independent 
+#'        simulations to run. Defaults to 10,000.
+#' @return A numeric value between 0 and 1 giving the estimated probability 
+#'         that the walk ends at 0.
 
 monte_carlo_simulator <- function(n, n_simulations = 10000) {
   results <- numeric(n_simulations)
