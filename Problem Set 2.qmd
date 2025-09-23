@@ -5,23 +5,168 @@ format: pdf
 editor: visual
 ---
 
-## Quarto
-
-Quarto enables you to weave together content and executable code into a finished document. To learn more about Quarto see <https://quarto.org>.
-
-## Running Code
-
-When you click the **Render** button a document will be generated that includes both content and the output of embedded code. You can embed code like this:
+#### GitHub Repository Link: <https://github.com/ziyelinlin/STATS-506-Problem-Set-2.git>
 
 ```{r}
-1 + 1
+library(microbenchmark)
 ```
 
-You can add options to executable code like this
+## Problem 1 – **Modified Random Walk**
+
+Consider a 1-dimensional random walk with the following rules:
+
+1.  Start at 0.
+2.  At each step, move +1 or -1 with 50/50 probability.
+3.  If +1 is chosen, 5% of the time move +10 instead.
+4.  If -1 is chosen, 20% of the time move -3 instead.
+5.  Repeat steps 2-4 for n times.
+
+(Note that if the +10 is chosen, it’s not +1 then +10, it is just +10.)
+
+Write a function to determine the end position of this random walk. The input and output should be:
+
+-   Input: The number of steps
+
+-   Output: The final position of the walk
+
+We’re going to implement this in **different ways** and compare them.
+
+a\. Implement the random walk in these three versions:
 
 ```{r}
-#| echo: false
-2 * 2
+input_check <- function(n) {
+  if (length(n) != 1 | n <= 0 | n != as.integer(n)) {
+    stop ("Input must be a positive integer.")
+  }
+  else return (n)
+}
 ```
 
-The `echo: false` option disables the printing of code (only output is displayed).
+-   Version 1: using a loop.
+
+    ```{r for_loop}
+    #' random_walk_1: Loop-based modified random walk
+    #' 
+    #' Simulates the final position of a one-dimensional modified random walk
+    #' @param n Positive integer, number of steps in the walk.
+    #' @return An integer giving the final position after \code{n} steps.
+
+    random_walk_1 <- function(n) {
+      n <- input_check(n)
+      position <- 0
+      for (i in seq_len(n)) {
+        step <- sample(
+          c(-3, -1, 1, 10),
+          size = 1,
+          prob = c(0.10, 0.40, 0.475, 0.025)
+        )
+        position <- position + step
+      }
+      return (position)
+    }
+    random_walk_1(10)
+    ```
+
+-   Version 2: using built-in R vectorized functions. (Using no loops.) (Hint: Does the order of steps matter?)
+
+    ```{r built_in_vectorized_functions}
+    #' random_walk_2: Vectorized modified random walk
+    #'
+    #' Simulates the final position of a one-dimensional modified random walk using a fully vectorized approach (no loops).
+    #' @param n Positive integer, number of steps in the walk.
+    #' @return An integer giving the final position after \code{n} steps.
+
+    random_walk_2 <- function(n) {
+      n <- input_check(n)
+      steps <- sample(c(-3, -1, 1, 10), 
+                      size = n, 
+                      replace = TRUE, 
+                      prob = c(0.1, 0.4, 0.475, 0.025))
+      position <- sum(steps)
+      return (position)
+    }
+    random_walk_2(10)
+    ```
+
+-   Version 3: Implement the random walk using one of the “`apply`” functions.
+
+    ```{r apply_based}
+    #' random_walk_3: Apply-based modified random walk
+    #'
+    #' Simulates the final position of a one-dimensional modified random walk using the \code{sapply()} function to generate each step.
+    #' @param n Positive integer, number of steps in the walk.
+    #' @return An integer giving the final position after \code{n} steps.
+
+    random_walk_3 <- function(n) {
+      n <- input_check(n)
+      steps <- sapply(seq_len(n), function(x) sample(c(-3, -1, 1, 10), size = 1, prob = c(0.1, 0.4, 0.475, 0.025)))
+      position <- sum(steps)
+      return (position)
+    }
+    random_walk_3(10)
+    ```
+
+Demonstrate that all versions work by running the following:
+
+```{r}
+random_walk_1(10)
+random_walk_2(10)
+random_walk_3(10)
+random_walk_1(1000)
+random_walk_2(1000)
+random_walk_3(1000)
+```
+
+b\. Demonstrate that the three versions **can give the same result**. Show this for both `n=10` and `n=1000`. (You will need to add a way to control the randomization.)
+
+```{r}
+# n = 10 
+set.seed(123)
+random_walk_1(10)
+set.seed(123)
+random_walk_2(10)
+set.seed(123)
+random_walk_3(10)
+
+# n = 1000
+set.seed(123)
+random_walk_1(1000)
+set.seed(123)
+random_walk_2(1000)
+set.seed(123)
+random_walk_3(1000)
+```
+
+c\. Use the **`microbenchmark`** package to clearly demonstrate the speed of the implementations. Compare performance with a low input (1,000) and a large input (100,000). Discuss the results.
+
+Answer: The vectorized approach (`random_walk_2`) is the most efficient and scales best to large problem sizes. The loop (`random_walk_1`) and apply (`random_walk_3`) versions are much slower because they repeatedly call `sample()`. The results align with expectations in R that vectorization is usually the most efficient way to perform repetitive operations.
+
+```{r}
+n_small <- 1000
+benchmark_small <- microbenchmark(
+  random_walk_1(n_small),
+  random_walk_2(n_small),
+  random_walk_3(n_small),
+  times = 10,
+  unit = "ms"
+)
+benchmark_small
+```
+
+```{r}
+n_large <- 100000
+benchmark_large <- microbenchmark(
+  random_walk_1(n_large),
+  random_walk_2(n_large),
+  random_walk_3(n_large),
+  times = 10,
+  unit = "ms"
+)
+benchmark_large
+```
+
+d\. What is the **probability** that the random walk ends at 0 if the number of steps is 10? 100? 1000? Defend your answers with evidence based upon a Monte Carlo simulation.
+
+```{r}
+
+```
