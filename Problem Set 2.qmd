@@ -77,7 +77,6 @@ input_check <- function(n) {
       
       return (position)
     }
-    random_walk_1(10)
     ```
 
 -   Version 2: using built-in R vectorized functions. (Using no loops.) (Hint: Does the order of steps matter?)
@@ -105,7 +104,6 @@ input_check <- function(n) {
       
       return (position)
     }
-    random_walk_2(10)
     ```
 
 -   Version 3: Implement the random walk using one of the “`apply`” functions.
@@ -134,12 +132,11 @@ input_check <- function(n) {
       
       return (position)
     }
-    random_walk_3(10)
     ```
 
 Demonstrate that all versions work by running the following:
 
-```{r}
+```{r function_testing}
 random_walk_1(10)
 random_walk_2(10)
 random_walk_3(10)
@@ -150,7 +147,7 @@ random_walk_3(1000)
 
 b\. Demonstrate that the three versions **can give the same result**. Show this for both `n=10` and `n=1000`. (You will need to add a way to control the randomization.)
 
-```{r}
+```{r same_result}
 # n = 10 
 c(random_walk_1(10, seed = 506), 
   random_walk_2(10, seed = 506), 
@@ -166,26 +163,24 @@ c\. Use the **`microbenchmark`** package to clearly demonstrate the speed of the
 
 ```{r microbenchmark_1000}
 n_small <- 1000
-benchmark_small <- microbenchmark(
+microbenchmark(
   random_walk_1(n_small),
   random_walk_2(n_small),
   random_walk_3(n_small),
   times = 10,
   unit = "ms"
 )
-benchmark_small
 ```
 
 ```{r microbenchmark_100000}
 n_large <- 100000
-benchmark_large <- microbenchmark(
+microbenchmark(
   random_walk_1(n_large),
   random_walk_2(n_large),
   random_walk_3(n_large),
   times = 10,
   unit = "ms"
 )
-benchmark_large
 ```
 
 Answer:
@@ -249,7 +244,22 @@ Accomplish this **without using any loops**.
 
 (Hint: This can be done with extremely minimal code.)
 
-```{r}
+```{r cars_per_day}
+#' cars_per_day: Simulate daily traffic at an intersection
+#'
+#' Simulates the total number of cars passing through an intersection per day.
+#' The day is divided into 5 time blocks with different traffic distributions:
+#' \itemize{
+#'   \item Midnight–7am (8 hours): Poisson(1) cars per hour
+#'   \item 8am rush (1 hour): Normal(mean = 60, var = 12)
+#'   \item 9am–4pm (8 hours): Poisson(8) cars per hour
+#'   \item 5pm rush (1 hour): Normal(mean = 60, var = 12)
+#'   \item 6pm–11pm (6 hours): Poisson(12) cars per hour
+#' }
+#' @param seed Optional integer. If provided, sets the random number generator
+#'        seed for reproducibility.
+#' @return A numeric value giving the total number of cars for that day.
+
 cars_per_day <- function(seed = NULL) {
   if (!is.null(seed)) set.seed(seed)
   
@@ -271,18 +281,38 @@ totals <- replicate(100000, cars_per_day())
 mean(totals)
 ```
 
-```{r}
-cars_per_day_vec <- function(days = 100000, seed = NULL) {
+```{r cars_per_day_sim}
+#' cars_per_day_sim: Monte Carlo estimate of daily traffic
+#'
+#' Estimates the expected number of cars passing through an intersection
+#' in one day using Monte Carlo simulation over many simulated days.
+#'
+#' The day is divided into 5 traffic blocks with different distributions:
+#' \itemize{
+#'   \item Midnight–7am (8 hours): Poisson(1) cars per hour
+#'   \item 8am rush (1 hour): Normal(mean = 60, var = 12)
+#'   \item 9am–4pm (8 hours): Poisson(8) cars per hour
+#'   \item 5pm rush (1 hour): Normal(mean = 60, var = 12)
+#'   \item 6pm–11pm (6 hours): Poisson(12) cars per hour
+#' }
+#'
+#' @param days Integer. Number of simulated days (default = 100000).
+#' @param seed Optional integer. If provided, sets the random number generator
+#'        seed for reproducibility.
+#' @return A numeric value: the Monte Carlo estimate of the expected
+#'   number of cars per day.
+  
+cars_per_day_sim <- function(days = 100000, seed = NULL) {
   if (!is.null(seed)) set.seed(seed)
 
-  # Simulate all hours at once for all days
+  # simulate all hours at once for all days
   midnight_to_7am   <- matrix(rpois(8 * days,  lambda = 1),  nrow = 8)
   rush_hour_morning <- rnorm(days,  mean = 60, sd = sqrt(12))
   nine_to_four      <- matrix(rpois(8 * days,  lambda = 8),  nrow = 8)
   rush_hour_evening <- rnorm(days,  mean = 60, sd = sqrt(12))
   six_to_eleven     <- matrix(rpois(6 * days,  lambda = 12), nrow = 6)
 
-  # Totals for each day = column sums across all blocks
+  # totals for each day = column sums across all blocks
   totals <- colSums(midnight_to_7am) +
             rush_hour_morning +
             colSums(nine_to_four) +
@@ -292,20 +322,35 @@ cars_per_day_vec <- function(days = 100000, seed = NULL) {
   # Monte Carlo estimate of expected daily cars
   return (mean(totals))  
 }
-cars_per_day_vec(days = 100000)
+cars_per_day_sim(days = 100000)
+```
+
+```{r compare_simulation_time}
+microbenchmark(
+  per_day_simulation <- mean(replicate(100000, cars_per_day())),
+  one_time_simulation <- cars_per_day_sim(days = 100000),
+  times = 10, 
+  unit = "ms"
+)
 ```
 
 Answer:
 
-Based on a Monte Carlo simulation of 100,000 independent days, the estimated average number of cars that pass the intersection per day is about 264.
+I solved this problem in two different ways: first by simulating traffic block by block for a single day and repeating many times, and second by using a fully vectorized approach to simulate many days at once. Based on a Monte Carlo simulation of 100,000 independent days, the estimated average number of cars that pass the intersection per day is about 264.
 
-This aligns with the theoretical expected value: $\mathbb{E}[\text{total}] = 8 \cdot 1 + 1 \cdot 60 + 8 \cdot 8 + 1 \cdot 60 + 6 \cdot 12 = 264$ cars.
+Both results align with the theoretical expected value of 264.
+
+$$
+\mathbb{E}[\text{total}] = 8 \cdot 1 + 1 \cdot 60 + 8 \cdot 8 + 1 \cdot 60 + 6 \cdot 12 = 264
+$$
+
+But the vectorized version was much faster. A benchmark showed that the per-day simulation took about 330 ms on average, whereas the one-time vectorized simulation took only about 59 ms, making the vectorized method nearly six times faster.
 
 ## **Problem 3 - Linear Regression**
 
 Use the following code to download the YouTube Superbowl commercials data:
 
-```{r}
+```{r data_loading}
 youtube <- read.csv('https://raw.githubusercontent.com/rfordatascience/tidytuesday/master/data/2021/2021-03-02/youtube.csv')
 ```
 
@@ -315,7 +360,7 @@ a\. Often in data analysis, we need to [de-identify](https://en.wikipedia.org/wi
 
 **Report the dimensions** of the data after removing these columns.
 
-```{r}
+```{r column_name}
 names(youtube)
 ```
 
@@ -372,43 +417,37 @@ hist(youtube_clean$view_count, main = "View count", xlab = "")
 summary(youtube$view_count)
 ```
 
+Based on the histograms and the summary statistics, we can see distribution of view counts is heavily right-skewed, with some very popular ads with huge view counts.
+
 ```{r checking_distribution_like_count}
 hist(youtube_clean$like_count, main = "Like count", xlab = "")
 summary(youtube$like_count)
 ```
+
+Based on the histograms and the summary statistics, we can see distribution of like counts is heavily right-skewed, with some very popular ads with huge like counts.
 
 ```{r checking_distribution_dislike_count}
 hist(youtube_clean$dislike_count, main = "Dislike count", xlab = "")
 summary(youtube$dislike_count)
 ```
 
+Based on the histograms and the summary statistics, we can see distribution of dislike counts is also highly right skewed, which is similar to the previous two variables, but much smaller values overall.
+
 ```{r checking_distribution_favorite_count}
 hist(youtube_clean$favorite_count, main = "Favorite count", xlab = "")
 summary(youtube$favorite_count)
 ```
+
+Based on the histograms and the summary statistics, we can see distribution of favorite counts is flat at zero, indicating no variation.
 
 ```{r checking_distribution_comment_count}
 hist(youtube_clean$comment_count, main = "Comment count", xlab = "")
 summary(youtube$comment_count)
 ```
 
-Answer:
+Based on the histograms and the summary statistics, we can see distribution of comment counts is heavily right-skewed, with most ads having few comments.
 
-Based on the histograms and the summary statistics, we can see
-
--   View counts: heavily right-skewed, with some very popular ads with huge view counts
-
--   Like counts: heavily right-skewed, with some very popular ads with huge like counts
-
--   Dislike counts: right-skewed, but much smaller values overall.
-
--   Favorite counts: flat at zero.
-
--   Comment counts: right-skewed, with most ads having few comments.
-
-Therefore, `favorite_count` is inappropriate to use as the outcome in a linear regression model.
-
-`view_count`, `like_count`, `dislike_count`, `comment_count` are use as the outcome in a linear regression model, but they require a log transformation to handle skewness. I used `log1p()` since the count can be 0.
+Therefore, `favorite_count` is inappropriate to use as the outcome in a linear regression model. Other four variables, `view_count`, `like_count`, `dislike_count`, `comment_count` are use as the outcome in a linear regression model, but they require a transformation to handle skewness. I applied the log transformation and used `log1p()` to compute $log(1+x)$ since count can be 0.
 
 ```{r log_transformation}
 vars <- c("view_count", "like_count", "dislike_count", "comment_count")
@@ -420,20 +459,26 @@ c\. For **each** variable in part b. that are appropriate, fit a **linear regres
 
 Discuss the results. Identify the direction of any statistically significant results.
 
-```{r}
-outcomes <- c("log_view_count", "log_like_count", "log_dislike_count", "log_comment_count")
+```{r fit_regression_models}
+# define the outcome variables to model
+outcomes <- c("log_view_count", "log_like_count", 
+              "log_dislike_count", "log_comment_count")
 
-formula_rhs <- "funny + show_product_quickly + patriotic + celebrity + danger + animals + use_sex + year"
+# define the common set of predictors (right-hand side of formula)
+formula_rhs <- "funny + show_product_quickly + patriotic + 
+                celebrity + danger + animals + use_sex + year"
 
+# for each outcome, build a regression formula and fit a linear model
 models <- lapply(outcomes, function(y) {
   reg_formula <- as.formula(paste(y, "~", formula_rhs))
   lm(reg_formula, data = youtube_clean)
 })
 
+# name each fitted model according to its outcome
 names(models) <- outcomes
 ```
 
-```{r}
+```{r regression_summaries}
 lapply(models, summary)
 ```
 
@@ -449,8 +494,8 @@ Answer:
 
 d\. Consider only the outcome of view counts. Calculate $\hat{\beta}$ manually (without using `lm`) by first creating a **proper design matrix**, then using matrix algebra to estimate $\beta$. Confirm that you get the same result as `lm` did in part c.
 
-```{r}
-# Design matrix
+```{r manual_calculation}
+# design matrix
 X <- model.matrix(~ funny + show_product_quickly + patriotic + 
                     celebrity + danger + animals + use_sex + year,
                   data = youtube_clean)
@@ -467,9 +512,9 @@ beta_hat <- solve(t(X) %*% X) %*% t(X) %*% y
 round(beta_hat, 5)
 ```
 
-```{r}
+```{r compare_to_lm}
 summary(lm(log_view_count ~ funny + show_product_quickly + patriotic + 
-             celebrity + danger + animals + use_sex + year,
+            celebrity + danger + animals + use_sex + year,
            data = youtube_clean))
 ```
 
@@ -478,3 +523,7 @@ Answer:
 To manually compute the regression coefficients, I first created a design matrix $X$ that includes an intercept, the seven binary predictors, and the covariate year. I then defined the outcome vector $y$ as the log-transformed view counts. Because the data set contained missing values, I restricted the analysis to complete cases so that $X$ and $y$ had the same rows.
 
 Then using the matrix formula $\hat{\beta} = (X^\top X)^{-1} X^\top y$, I obtained the ordinary least squares estimates, which matched those from the `lm()` function in part (c).
+
+**Disclosure:**
+
+I used ChatGPT to assist with writing function documentation for Problem 2, specifically to describe the traffic distributions. It also helped me revise the code for running multiple regression models at once and to fix some syntax errors in Problem 3 part c.
