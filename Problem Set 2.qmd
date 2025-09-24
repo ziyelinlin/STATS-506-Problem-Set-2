@@ -7,8 +7,9 @@ editor: visual
 
 #### GitHub Repository Link: <https://github.com/ziyelinlin/STATS-506-Problem-Set-2.git>
 
-```{r}
+```{r loading_packages}
 library(microbenchmark)
+library(tidyverse)
 ```
 
 ## Problem 1 – **Modified Random Walk**
@@ -33,7 +34,15 @@ We’re going to implement this in **different ways** and compare them.
 
 a\. Implement the random walk in these three versions:
 
-```{r}
+```{r input_validation}
+#' input_check: Validate input
+#'
+#' Checks that \code{n} is a single positive integer.
+#' Throws an error if the input is invalid.
+#'
+#' @param n Input object to check.
+#' @return The input \code{n}, if it is a valid positive integer.
+
 input_check <- function(n) {
   if (length(n) != 1 | n <= 0 | n != as.integer(n)) {
     stop ("Input must be a positive integer.")
@@ -155,11 +164,7 @@ c(random_walk_1(1000, seed = 123),
 
 c\. Use the **`microbenchmark`** package to clearly demonstrate the speed of the implementations. Compare performance with a low input (1,000) and a large input (100,000). Discuss the results.
 
-Answer:
-
-The vectorized approach (`random_walk_2`) is the most efficient and scales best to large problem sizes. The loop (`random_walk_1`) and apply (`random_walk_3`) versions are much slower because they repeatedly call `sample()`. The results align with expectations in R that vectorization is usually the most efficient way to perform repetitive operations.
-
-```{r}
+```{r microbenchmark_1000}
 n_small <- 1000
 benchmark_small <- microbenchmark(
   random_walk_1(n_small),
@@ -171,7 +176,7 @@ benchmark_small <- microbenchmark(
 benchmark_small
 ```
 
-```{r}
+```{r microbenchmark_100000}
 n_large <- 100000
 benchmark_large <- microbenchmark(
   random_walk_1(n_large),
@@ -183,15 +188,13 @@ benchmark_large <- microbenchmark(
 benchmark_large
 ```
 
-d\. What is the **probability** that the random walk ends at 0 if the number of steps is 10? 100? 1000? Defend your answers with evidence based upon a Monte Carlo simulation.
-
 Answer:
 
-I ran 10,000 independent simulations for each case. For each n, I estimated the probability of ending exactly at 0 as the proportion of simulations with final position = 0. The probabilities that the random walk ends at 0 I got are around 0.13 at n = 10, about 0.02 at n = 100, and about 0.005 at n = 1000.
+The vectorized approach (`random_walk_2`) is the most efficient and scales best to large problem sizes. The loop (`random_walk_1`) and apply (`random_walk_3`) versions are much slower because they repeatedly call `sample()`. The results align with expectations in R that vectorization is usually the most efficient way to perform repetitive operations.
 
-As the number of steps increases, the variance of the walk increases, making the distribution of the final position spreads out. This makes it increasingly unlikely that the walk ends exactly at 0, which explains why the probability decreases sharply from about 13% at 10 steps to only about very small probability by 1000 steps.
+d\. What is the **probability** that the random walk ends at 0 if the number of steps is 10? 100? 1000? Defend your answers with evidence based upon a Monte Carlo simulation.
 
-```{r}
+```{r monte_carlo_simulation}
 #' monte_carlo_simulator: Estimate probability of ending at 0
 #'
 #' Uses Monte Carlo simulation to estimate the probability that 
@@ -222,6 +225,12 @@ monte_carlo_simulator(100)
 monte_carlo_simulator(1000)
 ```
 
+Answer:
+
+I ran 10,000 independent simulations for each case. For each n, I estimated the probability of ending exactly at 0 as the proportion of simulations with final position = 0. The probabilities that the random walk ends at 0 I got are around 0.13 at n = 10, about 0.02 at n = 100, and about 0.005 at n = 1000.
+
+As the number of steps increases, the variance of the walk increases, making the distribution of the final position spreads out. This makes it increasingly unlikely that the walk ends exactly at 0, which explains why the probability decreases sharply from about 13% at 10 steps to only about very small probability by 1000 steps.
+
 ## **Problem 2 - Mean of Mixture of Distributions**
 
 The number of cars passing an intersection is a classic example of a **Poisson distribution**. At a particular intersection, Poisson is an appropriate distribution **most of the time**, but during **rush hours** (hours of 8am and 5pm) the distribution is really **normally distributed with a much higher mean**.
@@ -239,12 +248,6 @@ Using a Monte Carlo simulation, estimate the average number of cars that pass an
 Accomplish this **without using any loops**.
 
 (Hint: This can be done with extremely minimal code.)
-
-Answer:
-
-Based on a Monte Carlo simulation of 100,000 independent days, the estimated average number of cars that pass the intersection per day is about 264.
-
-This aligns with the theoretical expected value: $\mathbb{E}[\text{total}] = 8 \cdot 1 + 1 \cdot 60 + 8 \cdot 8 + 1 \cdot 60 + 6 \cdot 12 = 264$ cars.
 
 ```{r}
 cars_per_day <- function(seed = NULL) {
@@ -292,4 +295,186 @@ cars_per_day_vec <- function(days = 100000, seed = NULL) {
 cars_per_day_vec(days = 100000)
 ```
 
+Answer:
+
+Based on a Monte Carlo simulation of 100,000 independent days, the estimated average number of cars that pass the intersection per day is about 264.
+
+This aligns with the theoretical expected value: $\mathbb{E}[\text{total}] = 8 \cdot 1 + 1 \cdot 60 + 8 \cdot 8 + 1 \cdot 60 + 6 \cdot 12 = 264$ cars.
+
 ## **Problem 3 - Linear Regression**
+
+Use the following code to download the YouTube Superbowl commercials data:
+
+```{r}
+youtube <- read.csv('https://raw.githubusercontent.com/rfordatascience/tidytuesday/master/data/2021/2021-03-02/youtube.csv')
+```
+
+Information about this data can be found at <https://github.com/rfordatascience/tidytuesday/tree/main/data/2021/2021-03-02>. The research question for this project is to decide which of several attributes, if any, is associated with increased YouTube engagement metrics.
+
+a\. Often in data analysis, we need to [de-identify](https://en.wikipedia.org/wiki/De-identification) it. This is more important for studies of people, but let’s carry it out here. **Remove any column** that might uniquely identify a commercial. This includes but isn’t limited to things like brand, any URLs, the YouTube channel, or when it was published.
+
+**Report the dimensions** of the data after removing these columns.
+
+```{r}
+names(youtube)
+```
+
+```{r de_identify}
+identifier <- c("brand", 
+                "superbowl_ads_dot_com_url", 
+                "youtube_url", 
+                "id", 
+                "etag", 
+                "published_at", 
+                "title", 
+                "channel_title", 
+                "description", 
+                "thumbnail")
+
+youtube_clean <- youtube %>% select(-all_of(identifier))
+dim(youtube_clean)
+```
+
+Answer:
+
+I used `names(youtube)` to examine all the column names in the dataset. Several variables serve as unique identifiers and should be removed because they do not contribute meaningful information for modeling. 10 columns that are identifiers include:
+
+1.  `brand`: brand for commercial
+
+2.  `superbowl_ads_dot_com_url`: Superbowl ad URL
+
+3.  `youtube_url`: YouTube URL
+
+4.  `id`: YouTube ID
+
+5.  `etag`: YouTube etag
+
+6.  `published_at`: date/time published
+
+7.  `title`: ad title
+
+8.  `channel_title`: YouTube channel name
+
+9.  `description`: video description
+
+10. `thumbnail`: YouTube thumbnail
+
+After removing these variables, the data set has 247 rows and 15 columns.
+
+b\. For each of the following variables, examine their **distribution**. Determine whether i) The variable could be used as is as the **outcome** in a linear regression model, ii) The variable can **use a transformation prior to being used as the outcome** in a linear regression model, or iii) The variable **would not be appropriate** to use as the outcome in a linear regression model.
+
+For each variable, report **which category** it falls in. If it requires a transformation, **carry such a transformation** out and **use that transformation going forward**.
+
+(Hint: At least the majority of these variables are appropriate to use.)
+
+```{r checking_distribution_view_count}
+hist(youtube_clean$view_count, main = "View count", xlab = "")
+summary(youtube$view_count)
+```
+
+```{r checking_distribution_like_count}
+hist(youtube_clean$like_count, main = "Like count", xlab = "")
+summary(youtube$like_count)
+```
+
+```{r checking_distribution_dislike_count}
+hist(youtube_clean$dislike_count, main = "Dislike count", xlab = "")
+summary(youtube$dislike_count)
+```
+
+```{r checking_distribution_favorite_count}
+hist(youtube_clean$favorite_count, main = "Favorite count", xlab = "")
+summary(youtube$favorite_count)
+```
+
+```{r checking_distribution_comment_count}
+hist(youtube_clean$comment_count, main = "Comment count", xlab = "")
+summary(youtube$comment_count)
+```
+
+Answer:
+
+Based on the histograms and the summary statistics, we can see
+
+-   View counts: heavily right-skewed, with some very popular ads with huge view counts
+
+-   Like counts: heavily right-skewed, with some very popular ads with huge like counts
+
+-   Dislike counts: right-skewed, but much smaller values overall.
+
+-   Favorite counts: flat at zero.
+
+-   Comment counts: right-skewed, with most ads having few comments.
+
+Therefore, `favorite_count` is inappropriate to use as the outcome in a linear regression model.
+
+`view_count`, `like_count`, `dislike_count`, `comment_count` are use as the outcome in a linear regression model, but they require a log transformation to handle skewness. I used `log1p()` since the count can be 0.
+
+```{r log_transformation}
+vars <- c("view_count", "like_count", "dislike_count", "comment_count")
+
+youtube_clean[paste0("log_", vars)] <- lapply(youtube_clean[vars], log1p)
+```
+
+c\. For **each** variable in part b. that are appropriate, fit a **linear regression model** predicting them based upon each of the **seven binary flags** for characteristics of the ads, such as whether it is funny. **Control for year** as a continuous covariate.
+
+Discuss the results. Identify the direction of any statistically significant results.
+
+```{r}
+outcomes <- c("log_view_count", "log_like_count", "log_dislike_count", "log_comment_count")
+
+formula_rhs <- "funny + show_product_quickly + patriotic + celebrity + danger + animals + use_sex + year"
+
+models <- lapply(outcomes, function(y) {
+  reg_formula <- as.formula(paste(y, "~", formula_rhs))
+  lm(reg_formula, data = youtube_clean)
+})
+
+names(models) <- outcomes
+```
+
+```{r}
+lapply(models, summary)
+```
+
+Answer:
+
+-   For **log_view_count**, none of the seven binary flags for characteristics of the ads or year are statistically significant (all p-values \> 0.05). The R-squared is about 0.027, indicating the model explains very little variation in views. There is no strong evidence that these ad features are associated with view counts.
+
+-   For **log_like_count**, I found that year was a statistically significant positive predictor: more recent ads tend to receive more likes. The “danger” variable was marginally positive, suggesting these ads may be more liked, though this effect was not strongly significant. Other predictors were not statistically significant. The overall model explained about 7% of the variation in likes, indicating limited explanatory power of this model.
+
+-   For **log_dislike_count**, year became a strong positive predictor, indicating that ads in later years tended to accumulate more dislikes. There was also weak evidence that patriotic ads may have received more dislikes, though this effect was only marginally significant. Other ad features did not show significant associations. The model explained roughly 10% of the variation in dislikes, which is still very small but higher than the model for views or likes.
+
+-   For **log_comment_count**, none of the predictors reached conventional statistical significance at the 5% level. However, there was weak evidence that year had a positive association (p = 0.057), suggesting that more recent ads may have received more comments. Similarly, the patriotic variable was marginally positive (p = 0.096), indicating that patriotic ads might have attracted more comments, though this evidence is not strong. All other ad characteristics were unrelated to comment counts. The overall model explained about 6.5% of the variation in comment counts, indicating limited explanatory power as well.
+
+d\. Consider only the outcome of view counts. Calculate $\hat{\beta}$ manually (without using `lm`) by first creating a **proper design matrix**, then using matrix algebra to estimate $\beta$. Confirm that you get the same result as `lm` did in part c.
+
+```{r}
+# Design matrix
+X <- model.matrix(~ funny + show_product_quickly + patriotic + 
+                    celebrity + danger + animals + use_sex + year,
+                  data = youtube_clean)
+
+y <- youtube_clean$log_view_count
+
+# drop rows with NA in y
+complete <- complete.cases(y, X)
+X <- X[complete, ]
+y <- y[complete]
+
+# OLS estimator
+beta_hat <- solve(t(X) %*% X) %*% t(X) %*% y
+round(beta_hat, 5)
+```
+
+```{r}
+summary(lm(log_view_count ~ funny + show_product_quickly + patriotic + 
+             celebrity + danger + animals + use_sex + year,
+           data = youtube_clean))
+```
+
+Answer:
+
+To manually compute the regression coefficients, I first created a design matrix $X$ that includes an intercept, the seven binary predictors, and the covariate year. I then defined the outcome vector $y$ as the log-transformed view counts. Because the data set contained missing values, I restricted the analysis to complete cases so that $X$ and $y$ had the same rows.
+
+Then using the matrix formula $\hat{\beta} = (X^\top X)^{-1} X^\top y$, I obtained the ordinary least squares estimates, which matched those from the `lm()` function in part (c).
